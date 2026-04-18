@@ -7,3 +7,4 @@ latest.json
 latest_report.txt
 .test-output/
 .manual-output/
+.manual-output*/
