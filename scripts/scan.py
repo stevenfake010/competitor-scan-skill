@@ -15,16 +15,25 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
+import urllib.error
+import urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 
+for stream in (sys.stdout, sys.stderr):
+    if hasattr(stream, "reconfigure"):
+        stream.reconfigure(encoding="utf-8", errors="replace")
+
 WINDOW_DAYS = int(os.environ.get("COMPETITOR_SCAN_WINDOW_DAYS", "14"))
 MAX_QUERIES_PER_PLATFORM = int(
     os.environ.get("COMPETITOR_SCAN_MAX_QUERIES_PER_PLATFORM", "1")
 )
-OUTPUT_DIR = Path(os.environ.get("COMPETITOR_SCAN_OUTPUT_DIR", "/tmp/competitor_scan"))
+OUTPUT_DIR = Path(
+    os.environ.get("COMPETITOR_SCAN_OUTPUT_DIR", str(Path(tempfile.gettempdir()) / "competitor_scan"))
+)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 NOW = datetime.now()
@@ -32,10 +41,12 @@ DATE_TODAY = NOW.strftime("%Y-%m-%d")
 DATE_START = (NOW - timedelta(days=WINDOW_DAYS)).strftime("%Y-%m-%d")
 
 BAIDU_API_KEY = os.environ.get("BAIDU_API_KEY", "").strip()
+BAIDU_AI_SEARCH_API_KEY = os.environ.get("BAIDU_AI_SEARCH_API_KEY", BAIDU_API_KEY).strip()
 BAIDU_SEARCH_SCRIPT = os.environ.get(
     "BAIDU_SEARCH_SCRIPT",
     "/root/.openclaw/workspace/skills/baidu-search/scripts/search.py",
 )
+AGENT_REACH = os.environ.get("AGENT_REACH") or shutil.which("agent-reach") or "agent-reach"
 AGENT_REACH_BIN = os.environ.get("AGENT_REACH_BIN", "/root/.agent-reach-venv/bin")
 AGENT_REACH_PYTHON = os.environ.get(
     "AGENT_REACH_PYTHON", str(Path(AGENT_REACH_BIN) / "python3")
@@ -44,6 +55,12 @@ MCPORTER = os.environ.get("MCPORTER") or shutil.which("mcporter") or (
     "/root/.nvm/versions/node/v22.22.2/bin/mcporter"
 )
 XHS_CLI = os.environ.get("XHS_CLI", str(Path(AGENT_REACH_BIN) / "xhs"))
+MINIMAX_API_KEY = (
+    os.environ.get("MINIMAX_API_KEY")
+    or os.environ.get("MINIMAX_CODE_PLAN_KEY")
+    or os.environ.get("MINIMAX_CODING_API_KEY")
+    or ""
+).strip()
 DISABLED_CHANNELS = {
     c.strip()
     for c in os.environ.get("COMPETITOR_SCAN_DISABLE_CHANNELS", "").split(",")
@@ -150,6 +167,73 @@ def command_available(command: str) -> bool:
     return shutil.which(command) is not None
 
 
+def mcporter_literal(value: Any) -> str:
+    if isinstance(value, str):
+        return json.dumps(value, ensure_ascii=False)
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if value is None:
+        return "null"
+    return str(value)
+
+
+def format_mcporter_call(tool: str, params: dict[str, Any]) -> str:
+    args = ", ".join(f"{key}: {mcporter_literal(value)}" for key, value in params.items())
+    return f"{tool}({args})"
+
+
+def mcporter_call(tool: str, params: dict[str, Any], timeout: int = 20) -> str:
+    call = format_mcporter_call(tool, params)
+    raw = run_cmd([MCPORTER, "call", call], timeout=timeout)
+    lowered = raw.lower()
+    likely_error = any(
+        marker in lowered
+        for marker in (
+            "unknown command",
+            "invalid",
+            "usage:",
+            "not configured",
+            "no such",
+            "unable to load tool metadata",
+            "connection closed",
+            "mcp error",
+        )
+    )
+    if raw.strip() and "[CMD ERROR]" not in raw and not likely_error:
+        return raw
+
+    # Older mcporter wrappers accepted tool name plus key=value arguments.
+    legacy_args = [MCPORTER, "call", tool]
+    legacy_args.extend(f"{key}={value}" for key, value in params.items())
+    fallback = run_cmd(legacy_args, timeout=timeout)
+    return fallback if fallback.strip() else raw
+
+
+def resolve_agent_reach_python() -> str:
+    configured = os.environ.get("AGENT_REACH_PYTHON", "").strip()
+    candidates = [configured, sys.executable, "python3", "python", "py"]
+    seen = set()
+    for candidate in candidates:
+        if not candidate or candidate in seen or not command_available(candidate):
+            continue
+        seen.add(candidate)
+        probe = run_cmd(
+            [
+                candidate,
+                "-c",
+                "import agent_reach, sys; print(sys.executable)",
+            ],
+            timeout=8,
+        )
+        lowered = probe.lower()
+        if "traceback" in lowered or "modulenotfounderror" in lowered:
+            continue
+        path = probe.strip().splitlines()[-1] if probe.strip() else ""
+        if path:
+            return path
+    return ""
+
+
 def channel_disabled(channel: str) -> bool:
     return channel in DISABLED_CHANNELS
 
@@ -172,6 +256,8 @@ def run_cmd(args: list[str], timeout: int = 30, env: dict[str, str] | None = Non
             args,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=timeout,
             env=env or os.environ.copy(),
             check=False,
@@ -410,22 +496,43 @@ def parse_generic_search(
     data = extract_json(raw)
     results = []
     for item in parse_json_items(data):
-        title = item.get("title") or item.get("display_title") or item.get("text") or ""
+        title = (
+            item.get("title")
+            or item.get("display_title")
+            or item.get("name")
+            or item.get("desc")
+            or item.get("text")
+            or ""
+        )
         if not title:
             continue
         author = ""
         user = item.get("user")
         if isinstance(user, dict):
-            author = user.get("screen_name") or user.get("nick_name") or ""
+            author = user.get("screen_name") or user.get("nick_name") or user.get("nickname") or ""
+        author_obj = item.get("author")
+        if not author and isinstance(author_obj, dict):
+            author = author_obj.get("name") or author_obj.get("nickname") or ""
+        note_id = item.get("note_id") or item.get("feed_id") or item.get("id") or ""
+        url = item.get("url") or item.get("link") or item.get("note_url") or ""
+        if not url and source == "xhs" and note_id:
+            url = f"https://www.xiaohongshu.com/explore/{note_id}"
         results.append(
             make_signal(
                 platform=platform,
                 source=source,
                 title=title,
-                date=item.get("date") or item.get("created_at") or item.get("published") or "",
-                url=item.get("url") or item.get("link") or "",
-                author=author,
-                content=item.get("content") or item.get("snippet") or item.get("text") or "",
+                date=(
+                    item.get("date")
+                    or item.get("created_at")
+                    or item.get("published")
+                    or item.get("publishedDate")
+                    or item.get("time")
+                    or ""
+                ),
+                url=url,
+                author=author or item.get("nickname") or "",
+                content=item.get("content") or item.get("snippet") or item.get("desc") or item.get("text") or "",
                 query=query,
                 dimension=dimension,
             )
@@ -435,13 +542,8 @@ def parse_generic_search(
 
 def search_baidu_ai(platform: str, query: str, dimension: str | None = None, count: int = 5) -> list[dict[str, str]]:
     channel = "baidu_ai"
-    if channel_disabled(channel) or not BAIDU_API_KEY:
-        mark_channel(channel, False, "disabled or missing BAIDU_API_KEY")
-        return []
-    try:
-        import requests
-    except ImportError:
-        mark_channel(channel, False, "missing requests")
+    if channel_disabled(channel) or not BAIDU_AI_SEARCH_API_KEY:
+        mark_channel(channel, False, "disabled or missing BAIDU_AI_SEARCH_API_KEY")
         return []
 
     body = {
@@ -452,29 +554,36 @@ def search_baidu_ai(platform: str, query: str, dimension: str | None = None, cou
         "messages": [{"role": "user", "content": query}],
     }
     headers = {
-        "Authorization": f"Bearer {BAIDU_API_KEY}",
+        "Authorization": f"Bearer {BAIDU_AI_SEARCH_API_KEY}",
         "X-Appbuilder-From": "openclaw",
         "Content-Type": "application/json",
     }
+    payload = json.dumps(body, ensure_ascii=False).encode("utf-8")
+    request = urllib.request.Request(
+        "https://qianfan.baidubce.com/v2/ai_search/chat/completions",
+        data=payload,
+        headers=headers,
+        method="POST",
+    )
     try:
-        response = requests.post(
-            "https://qianfan.baidubce.com/v2/ai_search/chat/completions",
-            json=body,
-            headers=headers,
-            timeout=15,
-        )
+        with urllib.request.urlopen(request, timeout=15) as response:
+            status_code = response.status
+            raw = response.read().decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as exc:
+        status_code = exc.code
+        raw = exc.read().decode("utf-8", errors="replace")
     except Exception as exc:
         mark_channel(channel, False, f"request failed: {exc}")
         return []
-    if response.status_code == 429:
+    if status_code == 429:
         mark_channel(channel, False, "quota exhausted: HTTP 429")
         return []
-    if response.status_code != 200:
-        mark_channel(channel, False, f"HTTP {response.status_code}")
+    if status_code != 200:
+        mark_channel(channel, False, f"HTTP {status_code}")
         return []
 
     mark_channel(channel, True)
-    results = parse_generic_search(response.text, channel, platform, query, dimension)
+    results = parse_generic_search(raw, channel, platform, query, dimension)
     return results[:count]
 
 
@@ -504,13 +613,15 @@ def search_baidu(platform: str, query: str, dimension: str | None = None, count:
 def search_minimax(platform: str, query: str, dimension: str | None = None, count: int = 5) -> list[dict[str, str]]:
     channel = "minimax"
     if channel_disabled(channel) or not command_available(MCPORTER):
-        mark_channel(channel, False, "disabled or missing mcporter")
+        detail = "disabled or missing mcporter"
+        if MINIMAX_API_KEY and not channel_disabled(channel):
+            detail = "MINIMAX_API_KEY present; configure a mcporter minimax bridge for web search"
+        mark_channel(channel, False, detail)
         return []
-    raw = run_cmd(
-        [MCPORTER, "call", "minimax.web_search", f"query={query}", f"numResults={count}"],
-        timeout=15,
-    )
+    raw = mcporter_call("minimax.web_search", {"query": query, "numResults": count}, timeout=15)
     results = parse_minimax(raw, platform, query, dimension)
+    if not results:
+        results = parse_generic_search(raw, channel, platform, query, dimension)
     mark_channel(channel, True, "no usable results" if not results else "")
     return results[:count]
 
@@ -520,10 +631,7 @@ def search_exa(platform: str, query: str, dimension: str | None = None, count: i
     if channel_disabled(channel) or not command_available(MCPORTER):
         mark_channel(channel, False, "disabled or missing mcporter")
         return []
-    raw = run_cmd(
-        [MCPORTER, "call", "exa.web_search_exa", f"query={query}", f"numResults={count}"],
-        timeout=20,
-    )
+    raw = mcporter_call("exa.web_search_exa", {"query": query, "numResults": count}, timeout=20)
     results = parse_exa_text(raw, platform, query, dimension)
     if not results:
         results = parse_generic_search(raw, channel, platform, query, dimension)
@@ -536,10 +644,7 @@ def search_weibo(platform: str, query: str, dimension: str | None = None, count:
     if channel_disabled(channel) or not command_available(MCPORTER):
         mark_channel(channel, False, "disabled or missing mcporter")
         return []
-    raw = run_cmd(
-        [MCPORTER, "call", "weibo.search_content", f"keyword={query}", f"limit={count}"],
-        timeout=20,
-    )
+    raw = mcporter_call("weibo.search_content", {"keyword": query, "limit": count}, timeout=20)
     mark_channel(channel, "[CMD ERROR]" not in raw)
     return parse_generic_search(raw, channel, platform, query, dimension)[:count]
 
@@ -549,7 +654,7 @@ def search_weibo_trending(platform: str, query: str, count: int = 10) -> list[di
     if channel_disabled(channel) or not command_available(MCPORTER):
         mark_channel(channel, False, "disabled or missing mcporter")
         return []
-    raw = run_cmd([MCPORTER, "call", "weibo.get_trendings", f"limit={count}"], timeout=20)
+    raw = mcporter_call("weibo.get_trendings", {"limit": count}, timeout=20)
     data = extract_json(raw)
     results = []
     for item in parse_json_items(data):
@@ -575,9 +680,21 @@ def search_weibo_trending(platform: str, query: str, count: int = 10) -> list[di
 
 def search_xhs(platform: str, query: str, dimension: str | None = None, count: int = 5) -> list[dict[str, str]]:
     channel = "xhs"
-    if channel_disabled(channel) or not command_available(XHS_CLI):
-        mark_channel(channel, False, "disabled or missing XHS_CLI")
+    if channel_disabled(channel):
+        mark_channel(channel, False, "disabled")
         return []
+
+    if command_available(MCPORTER):
+        raw = mcporter_call("xiaohongshu.search_feeds", {"keyword": query}, timeout=20)
+        results = parse_generic_search(raw, channel, platform, query, dimension)[:count]
+        if results:
+            mark_channel(channel, True)
+            return results
+
+    if not command_available(XHS_CLI):
+        mark_channel(channel, False, "missing mcporter xiaohongshu bridge or XHS_CLI")
+        return []
+
     raw = run_cmd([XHS_CLI, "search", query], timeout=20)
     titles = re.findall(r"display_title:\s*(.+?)(?:\n|\r|$)", raw)
     authors = re.findall(r"nick_name:\s*(.+?)(?:\n|\r|$)", raw)
@@ -604,8 +721,9 @@ def search_xhs(platform: str, query: str, dimension: str | None = None, count: i
 
 def search_wechat(platform: str, query: str, dimension: str | None = None, count: int = 5) -> list[dict[str, str]]:
     channel = "wechat"
-    if channel_disabled(channel) or not command_available(AGENT_REACH_PYTHON):
-        mark_channel(channel, False, "disabled or missing AGENT_REACH_PYTHON")
+    agent_python = resolve_agent_reach_python()
+    if channel_disabled(channel) or not agent_python:
+        mark_channel(channel, False, "disabled or missing Agent-Reach Python")
         return []
     code = """
 import asyncio
@@ -627,7 +745,13 @@ async def main():
 
 asyncio.run(main())
 """ % (query, count)
-    raw = run_cmd([AGENT_REACH_PYTHON, "-c", code], timeout=20)
+    raw = run_cmd([agent_python, "-c", code], timeout=20)
+    if "Traceback" in raw or "ModuleNotFoundError" in raw:
+        detail = "miku_ai unavailable in Agent-Reach Python"
+        if "No module named" in raw:
+            detail = raw.strip().splitlines()[-1]
+        mark_channel(channel, False, detail)
+        return []
     results = parse_generic_search(raw, channel, platform, query, dimension)
     mark_channel(channel, True, "no usable results" if not results else "")
     return results[:count]
