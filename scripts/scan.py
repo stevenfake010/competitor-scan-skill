@@ -21,7 +21,7 @@ DATE_14D = (datetime.now() - timedelta(days=14)).strftime("%Y-%m-%d")
 
 BAIDU_API_KEY = os.environ.get(
     "BAIDU_API_KEY",
-    "bce-v3/ALTAK-VbCGaJu6MR0bX7yXFf1dn/26fb7fb34ff0f3513ed1c6c100ac0392bb01b381"
+    "YOUR_BAIDU_API_KEY"
 )
 SKILL_BAIDU = "/root/.openclaw/workspace/skills/baidu-search/scripts/search.py"
 AR_VENV = "/root/.agent-reach-venv/bin"
