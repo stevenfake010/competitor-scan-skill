@@ -1,0 +1,7 @@
+interface:
+  display_name: "Competitor Scan"
+  short_description: "Scan recent Chinese platform competitor signals."
+  default_prompt: "Use $competitor-scan to generate a concise Chinese competitor dynamics report."
+
+policy:
+  allow_implicit_invocation: true

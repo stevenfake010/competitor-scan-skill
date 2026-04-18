@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+.env
+.venv/
+latest.json
+latest_report.txt
