@@ -30,8 +30,16 @@ def test_parse_date():
 
 def test_build_queries_are_dynamic():
     query = scan.build_queries("抖音")[0][1]
-    assert "2026年4月" in query
-    assert "2026年4月" == f"{scan.NOW.year}年{scan.NOW.month}月"
+    month_label = f"{scan.NOW.year}年{scan.NOW.month}月"
+    assert month_label in query
+
+
+def test_format_mcporter_call_quotes_values():
+    call = scan.format_mcporter_call(
+        "xiaohongshu.search_feeds",
+        {"keyword": "抖音 创作者", "limit": 5},
+    )
+    assert call == 'xiaohongshu.search_feeds(keyword: "抖音 创作者", limit: 5)'
 
 
 def test_parse_exa_text():
@@ -75,6 +83,31 @@ def test_parse_minimax_nested_json():
     assert rows[0]["dimension"] == "增长策略"
 
 
+def test_parse_xhs_generic_json():
+    payload = {
+        "data": {
+            "items": [
+                {
+                    "display_title": "小红书创作者激励活动",
+                    "note_id": "abc123",
+                    "desc": "小红书开放创作者流量扶持。",
+                    "user": {"nickname": "运营观察"},
+                    "time": "2天前",
+                }
+            ]
+        }
+    }
+    rows = scan.parse_generic_search(
+        json.dumps(payload, ensure_ascii=False),
+        "xhs",
+        "小红书",
+        "小红书 增长",
+    )
+    assert len(rows) == 1
+    assert rows[0]["author"] == "运营观察"
+    assert rows[0]["url"] == "https://www.xiaohongshu.com/explore/abc123"
+
+
 def test_dedupe_filter_and_noise():
     rows = [
         scan.make_signal(platform="微博", source="weibo_hot", title="航班取消引热议", query="微博"),
@@ -99,8 +132,10 @@ def main():
     tests = [
         test_parse_date,
         test_build_queries_are_dynamic,
+        test_format_mcporter_call_quotes_values,
         test_parse_exa_text,
         test_parse_minimax_nested_json,
+        test_parse_xhs_generic_json,
         test_dedupe_filter_and_noise,
         test_dry_run_writes_outputs,
     ]
