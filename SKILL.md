@@ -37,10 +37,13 @@ Default dimensions:
 
 1. Confirm whether the user wants the default 7 platforms and 14-day window. If
    they do not specify otherwise, use the defaults.
-2. If MCP-backed channels are needed, start mcporter before scanning:
+2. If MCP-backed channels are needed, install and check Agent-Reach, then start
+   mcporter when your local setup requires a daemon:
 
    ```bash
-   ${MCPORTER:-/root/.nvm/versions/node/v22.22.2/bin/mcporter} daemon start
+   python3 -m pip install agent-reach || python3 -m pip install https://github.com/Panniantong/Agent-Reach/archive/refs/heads/main.zip
+   agent-reach doctor
+   mcporter daemon start
    ```
 
 3. Run the scanner from the skill directory:
@@ -51,8 +54,8 @@ Default dimensions:
 
 4. Read the generated structured data first:
 
-   - `/tmp/competitor_scan/latest.json`
-   - `/tmp/competitor_scan/latest_report.txt`
+   - `$COMPETITOR_SCAN_OUTPUT_DIR/latest.json`
+   - `$COMPETITOR_SCAN_OUTPUT_DIR/latest_report.txt`
 
 5. Produce the final report in Chinese. Prefer the structured JSON over raw
    text. Keep source/date labels visible for each signal. Do not invent details
@@ -80,17 +83,20 @@ Read `references/report-format.md` when exact formatting matters.
 
 ## Configuration
 
-The script supports environment overrides. Use these when the runtime differs
-from the original OpenClaw/Linux environment:
+The script supports environment overrides. Set secrets as environment variables;
+never paste them into the skill files.
 
 - `COMPETITOR_SCAN_OUTPUT_DIR`
 - `COMPETITOR_SCAN_WINDOW_DAYS`
 - `COMPETITOR_SCAN_MAX_QUERIES_PER_PLATFORM`
+- `BAIDU_AI_SEARCH_API_KEY`
 - `BAIDU_API_KEY`
 - `BAIDU_SEARCH_SCRIPT`
 - `MCPORTER`
+- `AGENT_REACH`
 - `AGENT_REACH_BIN`
 - `AGENT_REACH_PYTHON`
+- `MINIMAX_API_KEY`
 - `XHS_CLI`
 - `COMPETITOR_SCAN_DISABLE_CHANNELS`
 
