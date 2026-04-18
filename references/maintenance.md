@@ -52,6 +52,7 @@ Run these checks after changing the skill:
 
 ```bash
 python3 -m py_compile scripts/scan.py
+python3 tests/offline_scan_tests.py
 python3 /path/to/skill-creator/scripts/quick_validate.py /path/to/competitor-scan
 ```
 
