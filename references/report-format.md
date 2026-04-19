@@ -1,50 +1,100 @@
 # Report Format
 
-Use this template when the output must be directly deliverable to a business
-owner who needs a sharp view of competitor growth moves and what they mean for
-Xiaohongshu.
+Use this format when the output must be directly deliverable to business
+leadership as a user-growth decision reference.
+
+The report is a competitor user-growth brief, not a broad product-news digest.
+It must remain neutral, evidence-led, and organized by competitor platform.
+
+## Required Structure
+
+Only use these two top-level sections:
 
 ```text
 竞品用户增长情报简报 · YYYY-MM-DD
 读者：业务负责人
 时间窗口：YYYY-MM-DD ～ YYYY-MM-DD（14天）
 覆盖平台：抖音、抖音精选、快手、微信视频号、B站、微博、豆包
-有效信号：N 条 | 高优先级：M 条
+有效事件：N 个 | 高优先级事件：M 个 | 底层信号：K 条
 
-一、管理层摘要
-1. 供给侧争夺是否在升温，重点平台是谁。
-2. 动作重心更偏激励、分发、产品能力还是商业化。
-3. 对小红书接下来一到两周的主要压力点和机会点。
+一、摘要
+1. 本期形成 N 个用户增长事件（由 K 条有效信号合并），其中 P1 M 个；动作较集中的平台是 A、B、C。
+2. 增长杠杆分布以创作者供给 X 个、分发入口 Y 个、买量投放 Z 个为主。
+3. 只保留与用户增长路径相关的判断；信息缺口或证据不足要作为不确定性说明。
 
-二、建议优先跟进
-1. [P1][高可信/88] 平台｜维度｜动作类型｜标题
-   判断：用一句话概括这条动作的真实意图。
-   对小红书含义：明确指出对供给、分发、商业化或用户心智的影响。
-   证据：YYYY-MM-DD · 来源标签 · 域名
-   链接：https://...
-
-三、分平台拆解
+二、分平台信息
 1. 平台名
-   态势判断：先给一句结论，说明本期动作重心和强弱。
-   1) [P1][高可信/88] 维度｜动作类型｜标题
-      判断：解释动作本身，而不是复述标题。
-      对小红书含义：说明为什么值得跟、应该防什么、可借鉴什么。
-      证据：YYYY-MM-DD · 来源标签 · 域名
-      摘要：只保留与增长动作直接相关的信息。
-      链接：https://...
-
-四、证据质量与覆盖缺口
-- 当前有效证据主要来自哪些类型来源，例如官方/平台侧、公众号文章、公开网页/媒体、社媒/平台内观察。
-- 哪类证据明显不足，以及这会带来什么判断盲区。
-- 若一手官方证据偏少，要明确提醒“规则级判断仍需补充确认”。
+   态势判断：一句话说明该平台本期增长动作重心和强弱。
+   重点增长事件：
+   1) [P1][证据高/92] 事件标题
+      增长杠杆：创作者供给｜状态：已上线/已发布｜日期：YYYY-MM-DD
+      事实摘要：客观描述发生了什么，只保留与用户增长直接相关的信息。
+      证据：官方/平台侧1条；公众号文章2条；公开网页/媒体3条
+      来源：YYYY-MM-DD · 来源标签 · 域名｜URL；YYYY-MM-DD · 来源标签 · 域名｜URL
+      不确定性：缺少官方/平台侧确认；缺少明确发布时间
 ```
 
-## Rules
+Do not add a separate "建议优先跟进", "对小红书含义", "横向对比", or
+"附录" section unless the user explicitly requests it.
 
-- Write for a business owner, not for an engineer.
-- Lead with business judgment, not collection mechanics.
-- Use `判断` and `对小红书含义` to translate signals into action.
-- Keep every high-priority signal attached to an evidence line and link.
-- Make source quality visible, but do not expose internal retrieval tooling in the report body.
-- Prefer concise, decision-grade language over long excerpts or noisy snippets.
-- Keep the report delivery-ready without requiring manual rewriting.
+## User-Growth Boundary
+
+Keep an item only when it maps to at least one growth lever:
+
+- **拉新/获客**: new users, channel cooperation, referrals, red packets, external traffic, downloads, registration, user acquisition.
+- **促活/运营**: missions, topics, challenges, livestream operations, events, sign-in, interaction, campaign participation.
+- **留存/关系**: membership, points, levels, user return, relationship chains, continuity, creator or user retention.
+- **创作者供给**: creator incentives, revenue share, tasks, submissions, MCN/talent recruitment, creator tools that materially reduce production cost.
+- **分发入口**: search, recommendation, channel tabs, feed/ranking/routing changes, traffic allocation, content discovery.
+- **商业化激励**: revenue share, ads, store/e-commerce, mutual selection, commission, creator monetization.
+- **买量投放**: ad-buying, paid acquisition, creative/material libraries, placement cases, AppGrowing/巨量引擎/磁力引擎/腾讯广告 signals.
+
+Downgrade or exclude:
+
+- Generic AI model upgrades without a growth path.
+- Generic product launches or redesigns without acquisition, activation, retention, distribution, creator supply, monetization, or paid acquisition relevance.
+- Finance, strategy, financing, HR, stock, or executive news.
+- SEO service-provider pages, navigation pages, generic tutorials, and evergreen explainers.
+- Undated articles, unless used as supporting evidence for a dated event.
+
+## Event Clustering
+
+The report is event-based. Multiple articles about the same move must be
+merged into one event.
+
+Merge when records share:
+
+- Same platform.
+- Same concrete action or object.
+- Overlapping time window.
+- Overlapping core terms, such as `暂停广告`, `创作分成计划`, `抖音精选`, `可灵AI`, `流量扶持`, `创作活力分`.
+
+Examples:
+
+- `B站上线播放页暂停广告`, `B站暂停广告支持关闭`, and `UP主可选暂停广告` are one event.
+- `抖音精选中长视频引流`, `抖音精选重启`, and `字节用抖音为抖音精选导流` are one event.
+
+Multiple sources increase evidence strength; they must not create repeated P1
+entries.
+
+## Evidence Rules
+
+- P1 should be an event with a clear date, a direct user-growth lever, and high
+  or medium evidence strength.
+- Undated evidence is supporting context and should not become P1 on its own.
+- Platform content pages, such as user videos or posts, are platform/social
+  observation, not official rules.
+- Official/help-center pages count as official evidence only when the URL or
+  text is clearly a rule, help, announcement, creator center, agreement, support,
+  or policy page.
+- Low-credibility and SEO pages can support discovery but should not drive the
+  event priority without corroboration.
+
+## Tone
+
+- Write neutrally: describe what each competitor did and how it relates to user
+  growth.
+- Avoid "对小红书含义" unless explicitly asked for a Xiaohongshu response memo.
+- Prefer concise factual summaries over long excerpts.
+- Keep uncertainty visible and separate from facts.
+- Use exact dates whenever available.

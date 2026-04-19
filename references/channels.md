@@ -13,6 +13,7 @@ final report's “监测质量与缺口” section instead of failing the whole 
 | `COMPETITOR_SCAN_MAX_QUERIES_PER_PLATFORM` | `1` | Query budget per platform |
 | `COMPETITOR_SCAN_MIN_SIGNAL_SCORE` | `48` | Minimum total score to keep a signal |
 | `COMPETITOR_SCAN_TOP_PRIORITY_SIGNAL_LIMIT` | `6` | Global top-signal cap in the management section |
+| `COMPETITOR_SCAN_PLATFORM_EVENT_LIMIT` | `5` | Maximum events shown per platform in the text report |
 | `COMPETITOR_SCAN_REPORT_AUDIENCE` | `业务负责人` | Audience label in final report |
 | `BAIDU_AI_SEARCH_API_KEY` | empty | Enables Baidu AI Search |
 | `BAIDU_API_KEY` | empty | Enables legacy Baidu search helper |
@@ -73,6 +74,30 @@ before running the scanner so `mcporter` can start correctly.
 - May return plain text with `Title / URL / Published / Highlights`
 - Useful for mainstream media and domain-specific fallback searches
 
+### official
+
+- Uses Exa with platform-specific `site:` filters over configured official or
+  help-center domains
+- Targets official announcements, creator centers, help pages, agreements,
+  rules, and support pages
+- Only keep results that look like actual documentation or announcements; do
+  not treat platform content pages as official rule evidence
+- When adding platforms whose official domains also host user videos, posts, or
+  profiles, configure content-page URL markers in `PLATFORM_CONFIG`
+
+### creator_activity
+
+- Uses Exa to find creator tasks, submission campaigns, cash rewards, creator
+  recruitment, MCN/talent calls, and platform activity pages
+- Best used as a source for creator supply, activation, and campaign events
+
+### ad_signal
+
+- Uses Exa to find ad-buying, paid acquisition, creative/material, and platform
+  advertising signals
+- Treat marketing-service pages cautiously; they may indicate market activity
+  but should not drive P1 priority without corroboration
+
 ### weibo
 
 - First tries `mcporter weibo.search_content`
@@ -122,3 +147,15 @@ The scanner scores each signal on two axes:
      commercialization
 
 The final report only keeps signals above the configured score threshold.
+
+The text report is event-based:
+
+- Signals are filtered for user-growth relevance.
+- Similar signals are clustered into events.
+- Event priority is computed from the strongest signal plus evidence mix,
+  source diversity, and recency.
+- The report shows event clusters by platform; raw retained signals remain in
+  `latest.json -> by_platform`.
+- Platform-specific keywords and event phrases are clustering aids, not a report
+  perspective. The default report should stay neutral across all monitored
+  competitors.

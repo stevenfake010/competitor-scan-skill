@@ -41,6 +41,7 @@ MIN_SIGNAL_SCORE = int(os.environ.get("COMPETITOR_SCAN_MIN_SIGNAL_SCORE", "48"))
 TOP_PRIORITY_SIGNAL_LIMIT = int(
     os.environ.get("COMPETITOR_SCAN_TOP_PRIORITY_SIGNAL_LIMIT", "6")
 )
+PLATFORM_EVENT_LIMIT = int(os.environ.get("COMPETITOR_SCAN_PLATFORM_EVENT_LIMIT", "5"))
 REPORT_AUDIENCE = os.environ.get("COMPETITOR_SCAN_REPORT_AUDIENCE", "业务负责人").strip() or "业务负责人"
 OUTPUT_DIR = Path(
     os.environ.get(
@@ -189,12 +190,171 @@ ACTION_TYPE_RULES = {
     ],
 }
 
+GROWTH_LEVER_RULES = {
+    "拉新/获客": [
+        "拉新",
+        "新用户",
+        "获客",
+        "注册",
+        "下载",
+        "增长",
+        "红包",
+        "补贴",
+        "邀请",
+        "裂变",
+        "推广",
+        "渠道",
+        "站外引流",
+        "引流",
+    ],
+    "促活/运营": [
+        "促活",
+        "活跃",
+        "活动",
+        "话题",
+        "挑战赛",
+        "任务",
+        "签到",
+        "打卡",
+        "直播",
+        "热点",
+        "参与",
+        "互动",
+        "运营",
+    ],
+    "留存/关系": [
+        "留存",
+        "回流",
+        "召回",
+        "会员",
+        "积分",
+        "等级",
+        "权益",
+        "粉丝",
+        "关注",
+        "社群",
+        "连续",
+    ],
+    "创作者供给": [
+        "创作者",
+        "作者",
+        "UP主",
+        "达人",
+        "MCN",
+        "投稿",
+        "征稿",
+        "扶持",
+        "激励",
+        "现金奖励",
+        "流量扶持",
+        "创作",
+        "内容供给",
+        "培训营",
+        "任务中心",
+        "降本",
+        "制作成本",
+    ],
+    "分发入口": [
+        "推荐",
+        "搜索",
+        "入口",
+        "频道",
+        "算法",
+        "流量",
+        "分发",
+        "曝光",
+        "导流",
+        "引流",
+        "作者榜",
+        "播放页",
+    ],
+    "商业化激励": [
+        "分成",
+        "广告分成",
+        "流量主",
+        "变现",
+        "商单",
+        "带货",
+        "小店",
+        "电商",
+        "招商",
+        "互选",
+        "商业化",
+        "佣金",
+    ],
+    "买量投放": [
+        "买量",
+        "投放",
+        "广告投放",
+        "素材",
+        "巨量引擎",
+        "磁力引擎",
+        "腾讯广告",
+        "AppGrowing",
+        "获客成本",
+        "投放案例",
+    ],
+}
+
+ACTION_GROWTH_LEVERS = {
+    "创作者激励": "创作者供给",
+    "分发/流量机制": "分发入口",
+    "商业化/变现": "商业化激励",
+    "运营活动": "促活/运营",
+}
+
+GENERIC_PRODUCT_NOISE_KEYWORDS = [
+    "导航栏",
+    "服务商",
+    "排名优化",
+    "关键词优化",
+    "GEO优化",
+    "榜单深度解析",
+    "网址大全",
+    "工具合集",
+    "自媒体新人",
+    "普通人创业",
+    "搞钱",
+    "信息差",
+    "实操攻略",
+    "推广方案",
+]
+
+EVENT_PHRASES = [
+    "播放页暂停广告",
+    "暂停广告",
+    "创作分成计划",
+    "创作者激励计划",
+    "创作者扶持计划",
+    "流量扶持",
+    "广告分成",
+    "抖音精选",
+    "中长视频",
+    "创作活力分",
+    "互选平台",
+    "带货短视频",
+    "流量主",
+    "AI搜索",
+    "深度思考模型",
+    "可灵AI",
+    "微短剧",
+    "视频生成",
+    "作者榜",
+    "投稿活动",
+    "现金激励",
+    "MCN",
+    "广告投放",
+    "买量",
+    "投放素材",
+]
+
 GLOBAL_STRATEGIC_KEYWORDS = sorted(
     {
         keyword
         for keywords in DIMENSION_KEYWORDS.values()
         for keyword in keywords
     }
+    | {keyword for keywords in GROWTH_LEVER_RULES.values() for keyword in keywords}
     | {
         "创作者",
         "作者",
@@ -261,6 +421,7 @@ PLATFORM_CONFIG = {
             "jinritemai.com",
             "bytedance.com",
         ],
+        "content_url_markers": ["/share/", "/shipin/", "/video/"],
         "focus_keywords": [
             "创作者激励",
             "流量扶持",
@@ -273,15 +434,15 @@ PLATFORM_CONFIG = {
         "queries": [
             {
                 "dimension": "增长策略",
-                "query": "{platform} 创作者激励 流量扶持 站外播放 补贴 分成 最近14天 {month_label}",
+                "query": "{platform} 创作者激励 流量扶持 任务 投稿 分成 拉新 最近14天 {month_label}",
             },
             {
                 "dimension": "产品功能",
-                "query": "{platform} 推荐 搜索 算法 新功能 AI 入口 最近14天 {month_label}",
+                "query": "{platform} 搜索 推荐 入口 导流 活跃 用户增长 最近14天 {month_label}",
             },
             {
                 "dimension": "运营动作",
-                "query": "{platform} 短剧 扶持计划 招商 活动 直播 最近14天 {month_label}",
+                "query": "{platform} 短剧 扶持计划 活动 直播 达人招募 最近14天 {month_label}",
             },
         ],
     },
@@ -290,8 +451,8 @@ PLATFORM_CONFIG = {
         "official_domains": [
             "douyin.com",
             "bytedance.com",
-            "sina.com.cn",
         ],
+        "content_url_markers": ["/share/", "/shipin/", "/video/"],
         "focus_keywords": [
             "中长视频",
             "作者榜",
@@ -303,11 +464,11 @@ PLATFORM_CONFIG = {
         "queries": [
             {
                 "dimension": "增长策略",
-                "query": "{platform} 中长视频 作者榜 增长 引流 最近14天 {month_label}",
+                "query": "{platform} 中长视频 作者榜 增长 引流 导流 最近14天 {month_label}",
             },
             {
                 "dimension": "产品功能",
-                "query": "{platform} 新功能 分发 推荐 入口 最近14天 {month_label}",
+                "query": "{platform} 分发 推荐 入口 活跃 用户增长 最近14天 {month_label}",
             },
             {
                 "dimension": "运营动作",
@@ -323,6 +484,7 @@ PLATFORM_CONFIG = {
             "klingai.com",
             "kuaishou.cn",
         ],
+        "content_url_markers": ["/short-video/", "/profile/"],
         "focus_keywords": [
             "AI灵境计划",
             "可灵",
@@ -333,11 +495,11 @@ PLATFORM_CONFIG = {
         "queries": [
             {
                 "dimension": "增长策略",
-                "query": "{platform} 创作者扶持 流量扶持 补贴 现金激励 最近14天 {month_label}",
+                "query": "{platform} 创作者扶持 流量扶持 任务 投稿 现金激励 最近14天 {month_label}",
             },
             {
                 "dimension": "产品功能",
-                "query": "{platform} 可灵 AI 新功能 视频生成 工具 最近14天 {month_label}",
+                "query": "{platform} 可灵 AI 创作提效 短剧 制作成本 创作者 最近14天 {month_label}",
             },
             {
                 "dimension": "运营动作",
@@ -350,7 +512,6 @@ PLATFORM_CONFIG = {
         "official_domains": [
             "weixin.qq.com",
             "support.weixin.qq.com",
-            "qq.com",
             "mp.weixin.qq.com",
         ],
         "focus_keywords": [
@@ -364,11 +525,11 @@ PLATFORM_CONFIG = {
         "queries": [
             {
                 "dimension": "增长策略",
-                "query": "{platform} 创作者权益 流量主 分成 增长 最近14天 {month_label}",
+                "query": "{platform} 创作者权益 流量主 分成 扶持 增长 最近14天 {month_label}",
             },
             {
                 "dimension": "产品功能",
-                "query": "{platform} 新功能 入口 推荐 搜索 最近14天 {month_label}",
+                "query": "{platform} 入口 推荐 搜索 导流 活跃 最近14天 {month_label}",
             },
             {
                 "dimension": "运营动作",
@@ -379,6 +540,7 @@ PLATFORM_CONFIG = {
     "B站": {
         "aliases": ["B站", "哔哩哔哩", "bilibili"],
         "official_domains": ["bilibili.com", "b23.tv"],
+        "content_url_markers": ["/video/", "/read/cv"],
         "focus_keywords": [
             "创作者激励",
             "UP主",
@@ -394,7 +556,7 @@ PLATFORM_CONFIG = {
             },
             {
                 "dimension": "产品功能",
-                "query": "{platform} 新功能 暂停广告 播放页 推荐 最近14天 {month_label}",
+                "query": "{platform} 暂停广告 播放页 创作者收益 推荐 最近14天 {month_label}",
             },
             {
                 "dimension": "运营动作",
@@ -404,7 +566,9 @@ PLATFORM_CONFIG = {
     },
     "微博": {
         "aliases": ["微博", "weibo", "新浪微博"],
-        "official_domains": ["weibo.com", "m.weibo.cn", "sina.com.cn"],
+        "official_domains": ["weibo.com", "m.weibo.cn", "kefu.weibo.com", "event.weibo.com"],
+        "content_url_markers": ["/status/"],
+        "content_url_regexes": [r"weibo\.com/\d+/"],
         "focus_keywords": [
             "创作活力分",
             "金V",
@@ -420,7 +584,7 @@ PLATFORM_CONFIG = {
             },
             {
                 "dimension": "产品功能",
-                "query": "{platform} 创作活力分 内容标准 金V 最近14天 {month_label}",
+                "query": "{platform} 创作活力分 内容标准 金V 作者生态 最近14天 {month_label}",
             },
             {
                 "dimension": "运营动作",
@@ -442,11 +606,11 @@ PLATFORM_CONFIG = {
         "queries": [
             {
                 "dimension": "增长策略",
-                "query": "{platform} 增长 用户 运营 策略 最近14天 {month_label}",
+                "query": "{platform} 用户增长 拉新 活跃 投放 电商 最近14天 {month_label}",
             },
             {
                 "dimension": "产品功能",
-                "query": "{platform} AI 新功能 智能体 视频生成 电商 最近14天 {month_label}",
+                "query": "{platform} AI 智能体 电商 下单 推荐 获客 最近14天 {month_label}",
             },
             {
                 "dimension": "运营动作",
@@ -469,6 +633,9 @@ CHANNEL_LABELS = {
     "baidu": "百度搜索",
     "minimax": "MiniMax",
     "exa": "Exa",
+    "official": "官方公告/帮助中心",
+    "creator_activity": "创作者任务/活动",
+    "ad_signal": "广告投放/买量素材",
     "weibo": "微博内容",
     "weibo_hot": "微博热搜",
     "xhs": "小红书",
@@ -839,6 +1006,18 @@ def domain_matches(domain: str, patterns: list[str]) -> bool:
     return False
 
 
+def is_platform_content_page(signal: dict[str, Any]) -> bool:
+    domain = signal.get("domain", "")
+    url = signal.get("url", "").lower()
+    config = PLATFORM_CONFIG.get(signal.get("platform", ""), {})
+    content_domains = config.get("content_url_domains") or config.get("official_domains", [])
+    if content_domains and not domain_matches(domain, content_domains):
+        return False
+    if any(marker in url for marker in config.get("content_url_markers", [])):
+        return True
+    return any(re.search(pattern, url) is not None for pattern in config.get("content_url_regexes", []))
+
+
 def parse_json_items(data: Any) -> list[dict[str, Any]]:
     if isinstance(data, list):
         return [item for item in data if isinstance(item, dict)]
@@ -918,6 +1097,28 @@ def build_queries(platform: str) -> list[tuple[str, str]]:
     return queries
 
 
+def build_source_queries(platform: str) -> list[tuple[str, str, str]]:
+    month_label = f"{NOW.year}年{NOW.month}月"
+    domains = PLATFORM_CONFIG.get(platform, {}).get("official_domains", [])[:4]
+    site_filter = " OR ".join(f"site:{domain}" for domain in domains)
+    official_query = (
+        f"{site_filter} {platform} 创作者中心 帮助中心 公告 规则 激励 分成 流量扶持 最近14天 {month_label}"
+        if site_filter
+        else f"{platform} 官方 公告 创作者中心 激励 分成 流量扶持 最近14天 {month_label}"
+    )
+    creator_query = (
+        f"{platform} 创作者任务 投稿活动 现金奖励 扶持计划 达人招募 MCN 最近14天 {month_label}"
+    )
+    ad_query = (
+        f"{platform} 广告投放 买量 素材 投放案例 拉新 获客 巨量引擎 磁力引擎 腾讯广告 最近14天 {month_label}"
+    )
+    return [
+        ("official", "增长策略", official_query),
+        ("creator_activity", "运营动作", creator_query),
+        ("ad_signal", "增长策略", ad_query),
+    ]
+
+
 def matched_aliases(platform: str, text: str) -> list[str]:
     lowered = text.lower()
     return [
@@ -947,9 +1148,66 @@ def matched_keywords(signal: dict[str, Any]) -> list[str]:
     return hits
 
 
+def evidence_text(signal: dict[str, Any]) -> str:
+    return " ".join(
+        [
+            signal.get("title", ""),
+            signal.get("content", ""),
+            signal.get("author", ""),
+        ]
+    )
+
+
+def infer_growth_lever(signal: dict[str, Any]) -> tuple[str, int]:
+    text = evidence_text(signal).lower()
+    query = signal.get("query", "").lower()
+    scores: dict[str, int] = {}
+    for lever, keywords in GROWTH_LEVER_RULES.items():
+        evidence_hits = sum(1 for keyword in keywords if keyword.lower() in text)
+        query_hits = sum(1 for keyword in keywords if keyword.lower() in query)
+        scores[lever] = evidence_hits * 2 + min(query_hits, 2)
+
+    mapped = ACTION_GROWTH_LEVERS.get(signal.get("action_type", ""))
+    if mapped:
+        scores[mapped] = scores.get(mapped, 0) + 2
+    if signal.get("source") == "creator_activity":
+        scores["创作者供给"] = scores.get("创作者供给", 0) + 3
+        scores["促活/运营"] = scores.get("促活/运营", 0) + 1
+    if signal.get("source") == "ad_signal":
+        scores["买量投放"] = scores.get("买量投放", 0) + 4
+        scores["拉新/获客"] = scores.get("拉新/获客", 0) + 2
+
+    best = max(scores, key=scores.get)
+    return best, scores[best]
+
+
+def is_user_growth_signal(signal: dict[str, Any]) -> bool:
+    text = evidence_text(signal)
+    growth_score = int(signal.get("growth_score", 0))
+    action_type = signal.get("action_type", "")
+    source_tier_name = signal.get("source_tier", "")
+    evidence_aliases = matched_aliases(signal["platform"], text)
+
+    if any(keyword in text for keyword in SOCIAL_NOISE_KEYWORDS):
+        return False
+    if not evidence_aliases and source_tier_name != "官方/平台内":
+        return False
+    if any(keyword in text for keyword in GENERIC_PRODUCT_NOISE_KEYWORDS):
+        return False
+    if action_type == "AI能力" and growth_score < 5:
+        return False
+    if action_type in {"产品/能力升级", "产品功能"} and growth_score < 4:
+        return False
+    if source_tier_name in {"低可信站点", "未知来源"} and growth_score < 5:
+        return False
+    return growth_score >= 3
+
+
 def source_tier(signal: dict[str, Any]) -> tuple[str, int]:
     domain = signal.get("domain", "")
     platform = signal["platform"]
+    if is_platform_content_page(signal):
+        return "平台内容", 68
     if domain_matches(domain, PLATFORM_CONFIG.get(platform, {}).get("official_domains", [])):
         return "官方/平台内", 95
     if domain_matches(domain, MAINSTREAM_DOMAINS):
@@ -981,16 +1239,8 @@ def priority_label(score: int, credibility: int) -> str:
     return "P3"
 
 
-def strategic_implication(action_type: str) -> str:
-    if action_type == "创作者激励":
-        return "建议跟踪供给侧争夺强度、作者迁移风险和激励门槛变化，评估是否影响小红书内容供给成本。"
-    if action_type == "分发/流量机制":
-        return "建议关注分发入口和流量规则变化，评估是否会改变用户停留与内容消费心智。"
-    if action_type == "商业化/变现":
-        return "建议评估该动作对创作者留存和商业化预期的提升幅度，判断是否会抬高我方作者经营压力。"
-    if action_type == "AI能力":
-        return "建议评估其对创作提效与内容供给规模的拉动，识别我方是否需要补齐同类 AI 能力。"
-    return "建议结合内容供给、流量效率和商业化承接，判断该动作对小红书的竞争压力。"
+def priority_rank(priority: str | None) -> int:
+    return {"P1": 0, "P2": 1, "P3": 2}.get(priority or "", 3)
 
 
 def analyst_judgement(signal: dict[str, Any]) -> str:
@@ -1013,32 +1263,40 @@ def analyst_judgement(signal: dict[str, Any]) -> str:
 
 
 def relevance_score(signal: dict[str, Any]) -> int:
-    text = " ".join(
-        [
-            signal.get("title", ""),
-            signal.get("content", ""),
-            signal.get("author", ""),
-            signal.get("url", ""),
-        ]
-    )
-    aliases = matched_aliases(signal["platform"], text)
+    title = signal.get("title", "")
+    content = signal.get("content", "")
+    author = signal.get("author", "")
+    url = signal.get("url", "")
+    text = " ".join([title, content, author, url])
+    evidence_text = " ".join([title, content, author])
+    evidence_aliases = matched_aliases(signal["platform"], evidence_text)
+    content_aliases = matched_aliases(signal["platform"], content)
     keywords = matched_keywords(signal)
+    textual_keywords = [
+        keyword
+        for keyword in keywords
+        if keyword.lower() in evidence_text.lower()
+    ]
     dimension_hits = sum(
         1
         for keyword in DIMENSION_KEYWORDS.get(signal["dimension"], [])
-        if keyword.lower() in text.lower()
+        if keyword.lower() in evidence_text.lower()
     )
     official_bonus = 16 if signal.get("source_tier") == "官方/平台内" else 0
-    roundup_bonus = 10 if len(aliases) >= 2 else 0
+    roundup_bonus = 10 if len(evidence_aliases) >= 2 else 0
     score = (
-        len(set(aliases)) * 20
+        len(set(evidence_aliases)) * 20
         + len(keywords[:6]) * 6
         + dimension_hits * 5
         + official_bonus
         + roundup_bonus
     )
-    if not aliases and signal.get("source_tier") not in {"官方/平台内", "公众号文章"}:
+    if not evidence_aliases and signal.get("source_tier") not in {"官方/平台内", "公众号文章"}:
         score -= 18
+    if content and len(content) > 80 and not content_aliases and len(title) <= 16:
+        score -= 22
+    if evidence_aliases and len(textual_keywords) <= 1 and len(title) <= 16:
+        score -= 12
     if signal.get("source_tier") == "低可信站点":
         score -= 12
     if any(noise in text for noise in SOCIAL_NOISE_KEYWORDS):
@@ -1067,6 +1325,8 @@ def make_signal(
 ) -> dict[str, Any]:
     clean_title = clean_text(title, 140)
     clean_content = clean_text(content, 320)
+    if clean_title.strip().lower() in {"n/a", "na", "none", "null"} or re.fullmatch(r"\d{8,}", clean_title):
+        clean_title = summarize_text(clean_content, 80)
     signal: dict[str, Any] = {
         "platform": platform,
         "dimension": dimension or classify_dimension(clean_title, clean_content),
@@ -1090,18 +1350,26 @@ def make_signal(
     )
     signal["matched_keywords"] = matched_keywords(signal)
     signal["source_tier"], signal["credibility_score"] = source_tier(signal)
+    signal["growth_lever"], signal["growth_score"] = infer_growth_lever(signal)
     signal["relevance_score"] = relevance_score(signal)
+    signal["date_confidence"] = "dated" if parse_date(signal["raw_date"] or signal["date"]) else "undated"
     signal["total_score"] = total_signal_score(
         signal["credibility_score"],
         signal["relevance_score"],
         signal["action_type"],
     )
-    signal["priority"] = priority_label(
-        signal["total_score"], signal["credibility_score"]
-    )
+    if signal["growth_score"] < 3:
+        signal["total_score"] = max(0, signal["total_score"] - 18)
+    elif signal["growth_score"] >= 7:
+        signal["total_score"] = min(100, signal["total_score"] + 4)
+    if signal["date_confidence"] == "undated":
+        penalty = 10 if signal["source_tier"] == "官方/平台内" else 14
+        signal["total_score"] = max(0, signal["total_score"] - penalty)
+    signal["priority"] = priority_label(signal["total_score"], signal["credibility_score"])
+    if signal["date_confidence"] == "undated" and signal["priority"] == "P1":
+        signal["priority"] = "P2"
     signal["credibility_label"] = credibility_label(signal["credibility_score"])
     signal["judgement"] = analyst_judgement(signal)
-    signal["implication"] = strategic_implication(signal["action_type"])
     signal["evidence_summary"] = summarize_text(signal["content"] or signal["title"], 120)
     return signal
 
@@ -1111,6 +1379,7 @@ def parse_exa_text(
     platform: str,
     query: str,
     dimension: str | None = None,
+    source: str = "exa",
 ) -> list[dict[str, Any]]:
     results = []
     for entry in re.split(r"(?=Title:)", raw or ""):
@@ -1128,7 +1397,7 @@ def parse_exa_text(
             results.append(
                 make_signal(
                     platform=platform,
-                    source="exa",
+                    source=source,
                     title=title.group(1),
                     date=date.group(1) if date else "",
                     url=url.group(1) if url else "",
@@ -1450,6 +1719,11 @@ def search_minimax(
     results = parse_minimax(raw, platform, query, dimension)
     if not results:
         results = parse_generic_search(raw, channel, platform, query, dimension)
+    if not results and "unknown mcp server 'minimax'" in raw.lower():
+        raw = mcporter_call("MiniMax.web_search", {"query": query}, timeout=20)
+        results = parse_minimax(raw, platform, query, dimension)
+        if not results:
+            results = parse_generic_search(raw, channel, platform, query, dimension)
     if results:
         mark_channel(channel, True)
         return results[:count]
@@ -1496,6 +1770,56 @@ def search_exa(
     return results[:count]
 
 
+def is_official_doc_signal(row: dict[str, Any]) -> bool:
+    domain = row.get("domain", "")
+    url = row.get("url", "").lower()
+    text = evidence_text(row)
+    doc_markers = [
+        "help",
+        "support",
+        "creator",
+        "kefu",
+        "event",
+        "notice",
+        "announce",
+        "agreement",
+        "rule",
+        "规则",
+        "公告",
+        "帮助",
+        "协议",
+        "创作者中心",
+        "激励中心",
+    ]
+    if re.fullmatch(r"\d{8,}", row.get("title", "")):
+        return False
+    if any(marker in url for marker in doc_markers):
+        return True
+    if any(marker in text for marker in doc_markers[-6:]):
+        return True
+    return False
+
+
+def search_exa_source(
+    channel: str,
+    platform: str,
+    query: str,
+    dimension: str | None = None,
+    count: int = 3,
+) -> list[dict[str, Any]]:
+    if channel_disabled(channel) or not command_available(MCPORTER):
+        mark_channel(channel, False, "disabled or missing mcporter")
+        return []
+    raw = mcporter_call("exa.web_search_exa", {"query": query, "numResults": count}, timeout=20)
+    results = parse_exa_text(raw, platform, query, dimension, source=channel)
+    if not results:
+        results = parse_generic_search(raw, channel, platform, query, dimension)
+    if channel == "official":
+        results = [row for row in results if is_official_doc_signal(row)]
+    mark_channel(channel, True, "no usable results" if not results else "")
+    return results[:count]
+
+
 def search_weibo(
     platform: str,
     query: str,
@@ -1538,6 +1862,9 @@ def search_weibo(
     if results:
         mark_channel(channel, True, "used direct mcp_server_weibo package")
         return results[:count]
+    if detail:
+        mark_channel(channel, False, detail)
+        return []
     mark_channel(channel, True, detail or "no usable results")
     return []
 
@@ -1686,7 +2013,7 @@ def dedupe_and_filter(platform: str, results: list[dict[str, Any]]) -> list[dict
     ranked_results = sorted(
         results,
         key=lambda row: (
-            {"P1": 0, "P2": 1, "P3": 2}.get(row.get("priority"), 3),
+            priority_rank(row.get("priority")),
             -row.get("total_score", 0),
             -row.get("credibility_score", 0),
         ),
@@ -1696,6 +2023,8 @@ def dedupe_and_filter(platform: str, results: list[dict[str, Any]]) -> list[dict
     for result in ranked_results:
         title = result.get("title", "")
         if not title or is_social_noise(title, platform):
+            continue
+        if not is_user_growth_signal(result):
             continue
         if not in_window(result.get("raw_date") or result.get("date")):
             continue
@@ -1715,13 +2044,21 @@ def dedupe_and_filter(platform: str, results: list[dict[str, Any]]) -> list[dict
         filtered.append(result)
 
     def sort_key(row: dict[str, Any]) -> tuple[Any, ...]:
-        parsed = parse_date(row.get("raw_date") or row.get("date")) or datetime.min
-        priority_rank = {"P1": 0, "P2": 1, "P3": 2}.get(row.get("priority"), 3)
+        parsed = parse_date(row.get("raw_date") or row.get("date"))
+        recency_rank = 0
+        if parsed:
+            recency_rank = (
+                parsed.toordinal() * 86400
+                + parsed.hour * 3600
+                + parsed.minute * 60
+                + parsed.second
+            )
         return (
-            priority_rank,
+            priority_rank(row.get("priority")),
+            0 if parsed else 1,
             -row.get("total_score", 0),
             -row.get("credibility_score", 0),
-            parsed,
+            -recency_rank,
         )
 
     return sorted(filtered, key=sort_key)
@@ -1740,90 +2077,299 @@ def search_all_channels(platform: str) -> list[dict[str, Any]]:
         results.extend(search_xhs(platform, query, dim, 5))
         results.extend(search_wechat(platform, query, dim, 5))
         results.extend(search_weibo_trending(platform, query, 10))
+    for channel, dimension, query in build_source_queries(platform):
+        results.extend(search_exa_source(channel, platform, query, dimension, 3))
 
     filtered = dedupe_and_filter(platform, results)
     log(f"  [{platform}] 原始 {len(results)} 条，保留 {len(filtered)} 条")
     return filtered
 
 
-def build_platform_overview(platform: str, rows: list[dict[str, Any]]) -> str:
-    if not rows:
-        return "本期未捕捉到足够可信的用户增长信号，建议继续观察。"
-    dimension_counter = Counter(row["dimension"] for row in rows)
-    action_counter = Counter(row["action_type"] for row in rows)
-    priority_counter = Counter(row["priority"] for row in rows)
-    top_dimension = dimension_counter.most_common(1)[0][0]
-    top_action = action_counter.most_common(1)[0][0]
+def compact_title(title: str) -> str:
+    title = clean_text(title, 90)
+    title = re.split(r"[_｜|]-?", title)[0].strip() or title
+    title = re.sub(r"\s+", " ", title)
+    return title[:80]
 
-    if top_action == "创作者激励":
-        sentence = f"本期动作重心在供给侧争夺，{platform}主要通过创作者激励/扶持来做增长。"
-    elif top_action == "分发/流量机制":
-        sentence = f"本期更偏流量和分发机制调整，{platform}在提升内容分发效率。"
-    elif top_action == "商业化/变现":
-        sentence = f"本期重点落在商业化承接，{platform}在增强作者变现预期。"
-    elif top_action == "AI能力":
-        sentence = f"本期主要通过 AI 能力扩内容供给或场景渗透，{platform}动作偏产品化。"
+
+def event_terms(row: dict[str, Any]) -> list[str]:
+    text = f"{row.get('title', '')} {row.get('content', '')}"
+    terms: list[str] = []
+    for phrase in EVENT_PHRASES:
+        if phrase.lower() in text.lower() and phrase not in terms:
+            terms.append(phrase)
+    for keyword in row.get("matched_keywords", []):
+        if keyword in {"AI", "功能", "上线", "更新", "作者", "创作者"}:
+            continue
+        if keyword not in terms:
+            terms.append(keyword)
+    if not terms:
+        normalized = re.sub(r"[^\w\u4e00-\u9fff]+", "", row.get("title", "").lower())
+        if normalized:
+            terms.append(normalized[:24])
+    return terms[:6]
+
+
+def same_event(left: dict[str, Any], right: dict[str, Any]) -> bool:
+    if left.get("platform") != right.get("platform"):
+        return False
+    left_terms = set(left.get("_event_terms", []))
+    right_terms = set(right.get("_event_terms", []))
+    if not left_terms or not right_terms:
+        return False
+    overlap = len(left_terms & right_terms)
+    smaller = min(len(left_terms), len(right_terms))
+    if overlap >= 2 or (smaller <= 2 and overlap == smaller):
+        return True
+    return left.get("growth_lever") == right.get("growth_lever") and overlap >= 1 and smaller <= 3
+
+
+def event_status(rows: list[dict[str, Any]]) -> str:
+    text = " ".join(f"{row.get('title', '')} {row.get('content', '')}" for row in rows)
+    if any(word in text for word in ("已上线", "正式上线", "上线", "推出", "发布")):
+        return "已上线/已发布"
+    if any(word in text for word in ("内测", "灰度", "测试", "试点")):
+        return "内测/灰度"
+    if any(word in text for word in ("招商", "招募", "征集", "报名")):
+        return "招募/活动中"
+    if any(word in text for word in ("将", "计划", "预计", "即将")):
+        return "计划/待上线"
+    return "待验证"
+
+
+def evidence_strength(rows: list[dict[str, Any]]) -> str:
+    buckets = Counter(evidence_bucket(row) for row in rows)
+    dated = any(parse_date(row.get("raw_date") or row.get("date")) for row in rows)
+    high_cred = sum(1 for row in rows if row.get("credibility_score", 0) >= 80)
+    if dated and (buckets.get("官方/平台侧") or high_cred >= 2 or len(rows) >= 3):
+        return "高"
+    if high_cred or len(rows) >= 2:
+        return "中"
+    return "低"
+
+
+def event_score(rows: list[dict[str, Any]]) -> int:
+    best = max(row.get("total_score", 0) for row in rows)
+    buckets = Counter(evidence_bucket(row) for row in rows)
+    source_domains = {row.get("domain") for row in rows if row.get("domain")}
+    score = best
+    if buckets.get("官方/平台侧"):
+        score += 6
+    if len(source_domains) >= 2:
+        score += 4
+    if len(rows) >= 3:
+        score += 4
+    if not any(parse_date(row.get("raw_date") or row.get("date")) for row in rows):
+        score -= 8
+    return max(0, min(100, score))
+
+
+def event_priority(score: int, strength: str, date: str) -> str:
+    if score >= 88 and strength == "高" and date != "N/A":
+        return "P1"
+    if score >= 68:
+        return "P2"
+    return "P3"
+
+
+def latest_event_date(rows: list[dict[str, Any]]) -> str:
+    parsed_dates = [
+        parsed
+        for row in rows
+        if (parsed := parse_date(row.get("raw_date") or row.get("date")))
+    ]
+    if parsed_dates:
+        return max(parsed_dates).strftime("%Y-%m-%d")
+    return "N/A"
+
+
+def event_uncertainty(rows: list[dict[str, Any]], strength: str) -> str:
+    notes = []
+    if not any(parse_date(row.get("raw_date") or row.get("date")) for row in rows):
+        notes.append("缺少明确发布时间")
+    if not any(row.get("source_tier") == "官方/平台内" for row in rows):
+        notes.append("缺少官方/平台侧确认")
+    if strength == "低":
+        notes.append("证据来源较弱")
+    return "；".join(notes)
+
+
+def build_event(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    sorted_rows = sorted(
+        rows,
+        key=lambda row: (
+            priority_rank(row.get("priority")),
+            -row.get("total_score", 0),
+            -row.get("credibility_score", 0),
+        ),
+    )
+    best = sorted_rows[0]
+    strength = evidence_strength(rows)
+    score = event_score(rows)
+    date = latest_event_date(rows)
+    buckets = Counter(evidence_bucket(row) for row in rows)
+    source_keys = set()
+    sources = []
+    for row in sorted_rows:
+        key = (row.get("source"), row.get("domain"), row.get("url"))
+        if key in source_keys:
+            continue
+        source_keys.add(key)
+        sources.append(
+            {
+                "label": row.get("source_label") or row.get("source"),
+                "domain": row.get("domain"),
+                "date": row.get("date"),
+                "url": row.get("url"),
+                "title": row.get("title"),
+                "bucket": evidence_bucket(row),
+            }
+        )
+
+    return {
+        "platform": best["platform"],
+        "title": compact_title(best["title"]),
+        "growth_lever": best.get("growth_lever", "未分类"),
+        "action_type": best.get("action_type", ""),
+        "date": date,
+        "status": event_status(rows),
+        "priority": event_priority(score, strength, date),
+        "total_score": score,
+        "evidence_strength": strength,
+        "evidence_count": len(rows),
+        "evidence_buckets": dict(buckets),
+        "fact_summary": summarize_text(best.get("content") or best.get("title", ""), 150),
+        "sources": sources,
+        "uncertainty": event_uncertainty(rows, strength),
+        "signals": rows,
+    }
+
+
+def cluster_platform_events(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    clustered: list[list[dict[str, Any]]] = []
+    prepared = []
+    for row in rows:
+        copy = dict(row)
+        copy["_event_terms"] = event_terms(row)
+        prepared.append(copy)
+
+    for row in prepared:
+        matched_cluster = None
+        for cluster in clustered:
+            if same_event(row, cluster[0]):
+                matched_cluster = cluster
+                break
+        if matched_cluster is None:
+            clustered.append([row])
+        else:
+            matched_cluster.append(row)
+
+    events = [build_event([{k: v for k, v in row.items() if k != "_event_terms"} for row in cluster]) for cluster in clustered]
+    return sorted(
+        events,
+        key=lambda event: (
+            priority_rank(event["priority"]),
+            -event["total_score"],
+            event["date"] == "N/A",
+            event["date"],
+        ),
+    )
+
+
+def build_platform_overview(platform: str, events: list[dict[str, Any]]) -> str:
+    if not events:
+        return "本期未捕捉到足够可信的用户增长信号，建议继续观察。"
+    lever_counter = Counter(event["growth_lever"] for event in events)
+    priority_counter = Counter(event["priority"] for event in events)
+    top_lever = lever_counter.most_common(1)[0][0]
+
+    if top_lever == "创作者供给":
+        sentence = f"本期动作重心在供给侧，{platform}主要围绕作者激励、任务或内容供给扩张。"
+    elif top_lever == "分发入口":
+        sentence = f"本期更偏流量入口和分发机制，{platform}在调整内容发现或消费路径。"
+    elif top_lever == "商业化激励":
+        sentence = f"本期重点落在商业化激励，{platform}在强化创作者收益或交易承接。"
+    elif top_lever == "买量投放":
+        sentence = f"本期主要看到投放与获客相关动作，{platform}可能在加大外部流量获取。"
+    elif top_lever == "拉新/获客":
+        sentence = f"本期更偏拉新获客，{platform}围绕新用户、渠道或导流做动作。"
     else:
-        sentence = f"本期以运营动作放大增长信号，{platform}在为内容供给和用户活跃造势。"
+        sentence = f"本期以{top_lever}相关动作更突出，{platform}在放大用户增长信号。"
 
     if priority_counter.get("P1"):
-        sentence += f" 其中 {priority_counter['P1']} 条属于高优先级信号。"
+        sentence += f" 其中 {priority_counter['P1']} 个事件属于高优先级。"
     else:
-        sentence += f" 当前以 {top_dimension} 类中优先级中等的信号为主。"
+        sentence += " 当前以中低优先级观察事件为主。"
     return sentence
 
 
-def build_management_summary(all_rows: list[dict[str, Any]]) -> list[str]:
-    if not all_rows:
-        return ["本期未捕捉到足够可信的用户增长动作。"]
+def any_channel_success(channels: dict[str, dict[str, Any]]) -> bool:
+    return any(status.get("successes", 0) > 0 for status in channels.values())
 
-    by_platform = Counter(row["platform"] for row in all_rows if row["priority"] == "P1")
-    action_counter = Counter(row["action_type"] for row in all_rows)
-    dimension_counter = Counter(row["dimension"] for row in all_rows)
+
+def build_management_summary(
+    events: list[dict[str, Any]],
+    channels: dict[str, dict[str, Any]] | None = None,
+    signal_count: int = 0,
+) -> list[str]:
+    if not events:
+        if channels and not any_channel_success(channels):
+            return ["本次扫描未获得有效采集渠道返回，当前结果只能说明覆盖缺口，不能代表竞品没有增长动作。"]
+        return ["本期未捕捉到足够可信的用户增长事件。"]
+
+    p1_count = sum(1 for event in events if event["priority"] == "P1")
+    by_platform = Counter(event["platform"] for event in events if event["priority"] == "P1")
+    lever_counter = Counter(event["growth_lever"] for event in events)
+    strength_counter = Counter(event["evidence_strength"] for event in events)
     top_platforms = [name for name, _ in by_platform.most_common(3)] or [
-        name for name, _ in Counter(row["platform"] for row in all_rows).most_common(3)
+        name for name, _ in Counter(event["platform"] for event in events).most_common(3)
     ]
-    top_actions = [name for name, _ in action_counter.most_common(2)]
-    top_dimension = dimension_counter.most_common(1)[0][0]
+    lever_mix = "、".join(f"{name}{count}个" for name, count in lever_counter.most_common(3))
 
     bullets = []
-    if "创作者激励" in top_actions or top_dimension == "增长策略":
-        platforms = "、".join(top_platforms[:3]) or "重点平台"
+    platforms = "、".join(top_platforms[:3]) or "重点平台"
+    bullets.append(
+        f"本期形成 {len(events)} 个用户增长事件（由 {signal_count or len(events)} 条有效信号合并），其中 P1 {p1_count} 个；动作较集中的平台是 {platforms}。"
+    )
+    bullets.append(f"增长杠杆分布以{lever_mix}为主。")
+    if lever_counter.get("分发入口"):
         bullets.append(
-            f"供给侧争夺仍是主线，{platforms}出现了更密集的创作者激励、流量扶持或内容扶持信号。"
+            "分发入口相关事件需要重点观察，相关动作会影响内容发现、消费路径和流量分配。"
         )
-    if "分发/流量机制" in top_actions or "产品功能" == top_dimension:
+    supply_count = lever_counter.get("创作者供给", 0) + lever_counter.get("商业化激励", 0)
+    if supply_count:
         bullets.append(
-            "增长动作不只停留在补贴层面，多个平台同步在改分发入口、推荐机制或内容消费链路。"
+            f"创作者供给与商业化激励合计 {supply_count} 个事件，说明供给侧仍是本期增长动作的重要竞争面。"
         )
-    if "AI能力" in top_actions:
+    if lever_counter.get("买量投放"):
         bullets.append(
-            "AI 能力正在被更明确地用于创作提效与新场景渗透，说明平台在争夺效率红利。"
+            "买量投放相关事件已进入监测范围，后续应结合素材方向与投放场景判断获客重点。"
         )
-    if "商业化/变现" in top_actions:
-        bullets.append(
-            "商业化承接正在成为增长动作的一部分，作者侧的变现预期被用于稳定内容供给。"
-        )
+    if strength_counter.get("低"):
+        bullets.append(f"仍有 {strength_counter['低']} 个事件证据强度偏低，应作为观察项而非确定结论。")
     if not bullets:
         bullets.append("本期动作分散在多平台，需继续跟踪高可信来源中的持续性动作。")
-    return bullets[:4]
+    return bullets[:6]
 
 
-def build_priority_signals(all_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def build_priority_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
     prioritized = sorted(
-        all_rows,
-        key=lambda row: (
-            {"P1": 0, "P2": 1, "P3": 2}.get(row["priority"], 3),
-            -row["total_score"],
-            -row["credibility_score"],
+        events,
+        key=lambda event: (
+            priority_rank(event["priority"]),
+            event["date"] == "N/A",
+            -event["total_score"],
+            -event["evidence_count"],
         ),
     )
     return prioritized[:TOP_PRIORITY_SIGNAL_LIMIT]
 
 
 def evidence_bucket(row: dict[str, Any]) -> str:
-    if row.get("source_tier") == "official":
+    if row.get("source_tier") == "官方/平台内":
         return "官方/平台侧"
+    if row.get("source_tier") == "平台内容":
+        return "社媒/平台内观察"
     if row.get("source") == "wechat" or row.get("domain") == "mp.weixin.qq.com":
         return "公众号文章"
     if row.get("source") in {"weibo", "weibo_hot", "xhs"}:
@@ -1853,17 +2399,24 @@ def summarize_monitoring_quality(payload: dict[str, Any]) -> list[str]:
     search_ok = any(status.get(channel, {}).get("ok") for channel in search_channels)
     social_ok = any(status.get(channel, {}).get("ok") for channel in social_channels)
     wechat_ok = status.get("wechat", {}).get("ok")
-    xhs_ok = status.get("xhs", {}).get("ok")
+    failed_social_labels = [
+        CHANNEL_LABELS.get(channel, channel)
+        for channel in social_channels
+        if status.get(channel) and not status.get(channel, {}).get("ok")
+    ]
 
     if not search_ok:
         lines.append("- 公开网页与媒体检索覆盖不足，可能漏掉已经对外发布但尚未在社媒扩散的增长动作。")
     if not social_ok:
         lines.append("- 平台内内容与社媒扩散样本不足，可能低估动作热度、创作者反馈和执行强度。")
-    elif not xhs_ok:
-        lines.append("- 小红书平台内观察样本不足，跨平台动作在小红书侧的传播与反馈仍需继续补强。")
+    elif failed_social_labels:
+        failed_social_text = "、".join(failed_social_labels)
+        lines.append(
+            f"- 部分社媒/平台内渠道未覆盖（{failed_social_text}），可能低估个别平台的扩散反馈。"
+        )
     if not wechat_ok:
         lines.append("- 公众号长文覆盖不足，可能漏掉规则解释、活动复盘和更完整的运营口径。")
-    if all(row.get("source_tier") != "official" for row in all_rows):
+    if all(row.get("source_tier") != "官方/平台内" for row in all_rows):
         lines.append("- 一手官方/平台侧证据偏少，涉及规则级判断时建议继续补充确认。")
     return lines[:4]
 
@@ -1891,15 +2444,25 @@ def summarize_channel_status() -> list[str]:
 
 def build_payload(by_platform: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
     all_rows = [row for rows in by_platform.values() for row in rows]
-    priority_rows = build_priority_signals(all_rows)
+    by_platform_events = {
+        platform: cluster_platform_events(by_platform.get(platform, []))
+        for platform in PLATFORM_ORDER
+    }
+    all_events = [event for events in by_platform_events.values() for event in events]
+    priority_events = build_priority_events(all_events)
     platform_analysis = {}
     for platform in PLATFORM_ORDER:
         rows = by_platform.get(platform, [])
+        events = by_platform_events.get(platform, [])
         platform_analysis[platform] = {
-            "overview": build_platform_overview(platform, rows),
+            "overview": build_platform_overview(platform, events),
             "count": len(rows),
+            "event_count": len(events),
             "dimensions": dict(Counter(row["dimension"] for row in rows)),
             "priorities": dict(Counter(row["priority"] for row in rows)),
+            "event_priorities": dict(Counter(event["priority"] for event in events)),
+            "growth_levers": dict(Counter(event["growth_lever"] for event in events)),
+            "events": events,
             "signals": rows,
         }
 
@@ -1923,14 +2486,17 @@ def build_payload(by_platform: dict[str, list[dict[str, Any]]]) -> dict[str, Any
         "dimensions": list(DIMENSION_KEYWORDS.keys()),
         "raw_channel_calls": sum(status["calls"] for status in channel_status.values()),
         "effective_signal_count": len(all_rows),
+        "effective_event_count": len(all_events),
         "high_priority_signal_count": sum(1 for row in all_rows if row["priority"] == "P1"),
+        "high_priority_event_count": sum(1 for event in all_events if event["priority"] == "P1"),
         "channels": channel_status,
         "summary": {
-            "management_summary": build_management_summary(all_rows),
-            "priority_signals": priority_rows,
+            "management_summary": build_management_summary(all_events, channel_status, len(all_rows)),
+            "priority_events": priority_events,
             "monitor_gaps": gaps,
         },
         "platform_analysis": platform_analysis,
+        "by_platform_events": by_platform_events,
         "by_platform": by_platform,
     }
 
@@ -1942,68 +2508,82 @@ def format_evidence_line(row: dict[str, Any]) -> str:
     return " · ".join(parts)
 
 
+def format_event_evidence_mix(event: dict[str, Any]) -> str:
+    buckets = event.get("evidence_buckets", {})
+    ordered = ["官方/平台侧", "社媒/平台内观察", "公众号文章", "公开网页/媒体"]
+    parts = [f"{label}{buckets[label]}条" for label in ordered if buckets.get(label)]
+    return "；".join(parts) if parts else "暂无可归类证据"
+
+
+def format_event_source_line(event: dict[str, Any], limit: int = 2) -> str:
+    sources = event.get("sources", [])[:limit]
+    parts = []
+    for source in sources:
+        line = " · ".join(
+            item
+            for item in [
+                source.get("date") or "N/A",
+                source.get("label") or "未知来源",
+                source.get("domain") or "",
+            ]
+            if item
+        )
+        if source.get("url"):
+            line += f"｜{source['url']}"
+        parts.append(line)
+    return "；".join(parts)
+
+
 def build_text_summary(payload: dict[str, Any]) -> str:
     summary = payload["summary"]
     platform_analysis = payload["platform_analysis"]
-    priority_rows = summary["priority_signals"]
 
     lines = [
         f"竞品用户增长情报简报 · {DATE_TODAY}",
         f"读者：{REPORT_AUDIENCE}",
         f"时间窗口：{DATE_START} ～ {DATE_TODAY}（{WINDOW_DAYS}天）",
         "覆盖平台：" + "、".join(PLATFORM_ORDER),
-        f"有效信号：{payload['effective_signal_count']} 条 | 高优先级：{payload['high_priority_signal_count']} 条",
+        f"有效事件：{payload['effective_event_count']} 个 | 高优先级事件：{payload['high_priority_event_count']} 个 | 底层信号：{payload['effective_signal_count']} 条",
         "",
-        "一、管理层摘要",
+        "一、摘要",
     ]
     for index, bullet in enumerate(summary["management_summary"], 1):
         lines.append(f"{index}. {bullet}")
+    offset = len(summary["management_summary"])
+    for index, bullet in enumerate(summarize_monitoring_quality(payload), offset + 1):
+        lines.append(f"{index}. {bullet.lstrip('- ')}")
 
-    lines.extend(["", "二、建议优先跟进"])
-    if not priority_rows:
-        lines.append("暂无高优先级信号。")
-    else:
-        for index, row in enumerate(priority_rows, 1):
-            lines.append(
-                f"{index}. [{row['priority']}][{row['credibility_label']}/{row['total_score']}] "
-                f"{row['platform']}｜{row['dimension']}｜{row['action_type']}｜{row['title']}"
-            )
-            lines.append(f"   判断：{row['judgement']}")
-            lines.append(f"   对小红书含义：{row['implication']}")
-            lines.append(f"   证据：{format_evidence_line(row)}")
-            if row.get("url"):
-                lines.append(f"   链接：{row['url']}")
-
-    lines.extend(["", "三、分平台拆解"])
+    lines.extend(["", "二、分平台信息"])
     section_index = 1
     for platform in PLATFORM_ORDER:
         analysis = platform_analysis[platform]
-        rows = analysis["signals"]
+        events = analysis["events"][:PLATFORM_EVENT_LIMIT]
         lines.append(f"{section_index}. {platform}")
         lines.append(f"   态势判断：{analysis['overview']}")
-        if not rows:
-            lines.append("   暂无达到阈值的有效信号。")
+        if not events:
+            lines.append("   暂无达到阈值的用户增长事件。")
             section_index += 1
             lines.append("")
             continue
 
-        for row_index, row in enumerate(rows, 1):
+        lines.append("   重点增长事件：")
+        for event_index, event in enumerate(events, 1):
             lines.append(
-                f"   {row_index}) [{row['priority']}][{row['credibility_label']}/{row['total_score']}] "
-                f"{row['dimension']}｜{row['action_type']}｜{row['title']}"
+                f"   {event_index}) [{event['priority']}][证据{event['evidence_strength']}/{event['total_score']}] {event['title']}"
             )
-            lines.append(f"      判断：{row['judgement']}")
-            lines.append(f"      对小红书含义：{row['implication']}")
-            lines.append(f"      证据：{format_evidence_line(row)}")
-            if row.get("evidence_summary"):
-                lines.append(f"      摘要：{row['evidence_summary']}")
-            if row.get("url"):
-                lines.append(f"      链接：{row['url']}")
+            lines.append(
+                f"      增长杠杆：{event['growth_lever']}｜状态：{event['status']}｜日期：{event['date']}"
+            )
+            lines.append(f"      事实摘要：{event['fact_summary']}")
+            lines.append(f"      证据：{format_event_evidence_mix(event)}")
+            source_line = format_event_source_line(event)
+            if source_line:
+                lines.append(f"      来源：{source_line}")
+            if event.get("uncertainty"):
+                lines.append(f"      不确定性：{event['uncertainty']}")
         lines.append("")
         section_index += 1
 
-    lines.append("四、证据质量与覆盖缺口")
-    lines.extend(summarize_monitoring_quality(payload))
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -2027,7 +2607,7 @@ def main() -> None:
     log("扫描完成")
     log(f"  结构化数据: {json_path}")
     log(f"  原始报告: {text_path}")
-    log(f"  有效信号: {payload['effective_signal_count']}")
+    log(f"  有效事件: {payload['effective_event_count']}（底层信号 {payload['effective_signal_count']}）")
     log("")
     print(text_report)
 
